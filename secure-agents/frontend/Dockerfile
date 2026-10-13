@@ -8,8 +8,10 @@ USER root
 COPY package*.json /app/
 
 RUN npm install --legacy-peer-deps \
-    && npm install --save-dev --save-exact typescript@6.0.3 --legacy-peer-deps
-
+    && npm install --save-dev --save-exact \
+       typescript@6.0.3 \
+       @tailwindcss/postcss \
+       --legacy-peer-deps
 COPY ./ /app/
 
 
