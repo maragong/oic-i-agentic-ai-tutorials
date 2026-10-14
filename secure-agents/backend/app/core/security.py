@@ -112,45 +112,26 @@ def decode_jwt_token(
 
 def encrypt_user_payload(user_payload: dict) -> str:
     """
-    Encrypt user payload using WxO public key with chunked encryption.
+    Encrypt user payload using WxO public key with Node-RSA compatible OAEP SHA-1 padding.
     Returns base64 encoded encrypted data.
     """
     try:
         # Load WxO public key from environment or file
         wxo_public_key = _load_wxo_public_key()
 
-        # Calculate max chunk size for RSA encryption
-        key_size = wxo_public_key.key_size // 8  # Convert bits to bytes
-        # OAEP padding overhead: 2 * hash_length + 2
-        max_chunk_size = key_size - 2 * hashes.SHA256().digest_size - 2
-
         # Convert payload to JSON string and then to bytes
         payload_json = json.dumps(user_payload)
         payload_bytes = payload_json.encode("utf-8")
 
-        # Encrypt in chunks
-        encrypted_chunks = []
-        offset = 0
-
-        while offset < len(payload_bytes):
-            # Get the next chunk
-            chunk = payload_bytes[offset : offset + max_chunk_size]
-
-            # Encrypt this chunk
-            encrypted_chunk = wxo_public_key.encrypt(
-                chunk,
-                padding.OAEP(
-                    mgf=padding.MGF1(algorithm=hashes.SHA256()),
-                    algorithm=hashes.SHA256(),
-                    label=None,
-                ),
-            )
-
-            encrypted_chunks.append(encrypted_chunk)
-            offset += max_chunk_size
-
-        # Concatenate all encrypted chunks
-        encrypted_data = b"".join(encrypted_chunks)
+        # Encrypt using OAEP with SHA1 and MGF1 SHA1 (Node-RSA default scheme pkcs1_oaep)
+        encrypted_data = wxo_public_key.encrypt(
+            payload_bytes,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA1()),
+                algorithm=hashes.SHA1(),
+                label=None,
+            ),
+        )
 
         # Return base64 encoded encrypted data
         return base64.b64encode(encrypted_data).decode("utf-8")
@@ -211,33 +192,23 @@ def create_wxo_jwt_token(
             "iss": "products-web-app",  # Issuer
         }
 
-        # Create user_payload with SSO token and user data
-        user_payload = {
-            "name": final_user_name,
-            "custom_user_id": final_user_id,
+        # Add context for user profile if available
+        payload["context"] = {
+            "user_profile": {
+                "name": final_user_name,
+                "custom_user_id": final_user_id,
+            }
         }
 
-        # Add SSO token (IBM Verify access token) if provided
+        # Encrypt SSO token in user_payload if provided (OBO flow)
         if sso_token:
-            user_payload["sso_token"] = sso_token
-            # Add additional user info from IBM Verify token
-            if user_info:
-                user_payload["email"] = user_info.get("email")
-                user_payload["email_verified"] = user_info.get("email_verified")
-                user_payload["iss"] = user_info.get("iss")  # IBM Verify issuer
-
-        print("THIS IS YOUR PAYLOAD AGAIAAAIAAIAIAIAINA")
-        print(payload)
-        print(user_payload)
-
-        # Try to encrypt the user_payload using WxO public key
-        try:
-            encrypted_payload = encrypt_user_payload(user_payload)
-            payload["user_payload"] = encrypted_payload
-        except Exception as encrypt_error:
-            # Log error but continue without encrypted payload
-            print(f"Failed to encrypt user_payload: {str(encrypt_error)}")
-            raise  # Re-raise to ensure we don't send invalid tokens
+            user_payload = {"sso_token": sso_token}
+            try:
+                encrypted_payload = encrypt_user_payload(user_payload)
+                payload["user_payload"] = encrypted_payload
+            except Exception as encrypt_error:
+                print(f"Failed to encrypt user_payload: {str(encrypt_error)}")
+                raise
 
         # Sign the JWT with RS256 algorithm using the PEM string
         # Include kid in header so WXO can find the registered public key
