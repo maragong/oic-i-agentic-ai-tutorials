@@ -43,13 +43,6 @@ function OAuth2Callback() {
         return;
       }
 
-      // Check if we already have a token (from a previous execution)
-      const existingToken = localStorage.getItem("access_token");
-      if (existingToken) {
-        console.log("✅ Token already exists, redirecting to home");
-        window.location.href = "/";
-        return;
-      }
 
       try {
         console.log("🔄 Exchanging authorization code for token...");

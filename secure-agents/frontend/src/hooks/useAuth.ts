@@ -3,6 +3,21 @@ import { useNavigate } from "@tanstack/react-router";
 import type { UserPublic } from "../client";
 import { Oauth } from "../client";
 
+const decodeJwtPayload = (token: string): any => {
+  const parts = token.split(".");
+  if (parts.length < 2) {
+    throw new Error("Invalid JWT token format");
+  }
+  let base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+  while (base64.length % 4 !== 0) {
+    base64 += "=";
+  }
+  const binaryString = atob(base64);
+  const bytes = Uint8Array.from(binaryString, (c) => c.charCodeAt(0));
+  const decoded = new TextDecoder().decode(bytes);
+  return JSON.parse(decoded);
+};
+
 const isLoggedIn = () => {
   return localStorage.getItem("access_token") !== null;
 };
@@ -20,8 +35,32 @@ const useAuth = () => {
           return null;
         }
 
-        // Decode JWT token to get user info (without verification - backend will verify)
-        const payload = JSON.parse(atob(token.split(".")[1]));
+        const idToken = localStorage.getItem("id_token");
+        const tokenToDecode = idToken || token;
+
+        let payload: any = null;
+        try {
+          payload = decodeJwtPayload(tokenToDecode);
+        } catch {
+          if (idToken && tokenToDecode === idToken) {
+            try {
+              payload = decodeJwtPayload(token);
+            } catch (err) {
+              console.warn("Could not decode access_token:", err);
+            }
+          }
+        }
+
+        if (!payload) {
+          return {
+            id: "user",
+            email: null,
+            full_name: "Authenticated User",
+            preferred_username: null,
+            unique_name: null,
+            upn: null,
+          } as UserPublic;
+        }
 
         // Check if token is expired
         if (payload.exp && payload.exp < Date.now() / 1000) {
@@ -36,17 +75,13 @@ const useAuth = () => {
         return {
           id: payload.sub || "",
           email: payload.unique_name || payload.email || null,
-          full_name: payload.name || null,
-          preferred_username: payload.preferred_username || null,
+          full_name: payload.name || payload.displayName || null,
+          preferred_username: payload.preferred_username || payload.name || null,
           unique_name: payload.unique_name || null,
           upn: payload.upn || null,
         } as UserPublic;
       } catch (err) {
-        console.error("Error decoding token:", err);
-        localStorage.removeItem("access_token");
-        localStorage.removeItem("refresh_token");
-        localStorage.removeItem("id_token");
-        navigate({ to: "/login" });
+        console.error("Error in useAuth queryFn:", err);
         return null;
       }
     },
