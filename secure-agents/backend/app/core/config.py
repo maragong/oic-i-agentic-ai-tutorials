@@ -123,6 +123,8 @@ class Settings(BaseSettings):
     JWT_PRIVATE_KEY_BASE64: str = ""
     # WATSON ORCHESTRATE's public key - used to ENCRYPT user payload that WXO will decrypt
     WXO_PUBLIC_KEY_BASE64: str = ""
+    # Key ID (kid) for the JWT - JWK Thumbprint (RFC 7638) of the public key registered in WXO Embed Security
+    JWT_KID: str = "YHFZ7JivoqTAbEj3Fvn4PxwwhSs9x6RchnLlstdq-4g"
 
     # Aliases for backend use (without VITE_ prefix)
     @computed_field  # type: ignore[prop-decorator]

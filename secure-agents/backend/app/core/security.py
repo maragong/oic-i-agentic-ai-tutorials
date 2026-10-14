@@ -240,7 +240,13 @@ def create_wxo_jwt_token(
             raise  # Re-raise to ensure we don't send invalid tokens
 
         # Sign the JWT with RS256 algorithm using the PEM string
-        token = jwt.encode(payload, private_key_pem, algorithm="RS256")
+        # Include kid in header so WXO can find the registered public key
+        token = jwt.encode(
+            payload,
+            private_key_pem,
+            algorithm="RS256",
+            headers={"kid": settings.JWT_KID},
+        )
 
         return token
     except Exception as e:
