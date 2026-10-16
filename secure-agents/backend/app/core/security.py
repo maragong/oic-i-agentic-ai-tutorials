@@ -181,23 +181,19 @@ def create_wxo_jwt_token(
         final_user_id = custom_user_id or "unknown-user"
         final_user_name = user_name or "Unknown User"
 
-        # Create JWT payload with actual user data
+        # Create JWT payload adhering strictly to Watson Embed Security specification
         now = datetime.now(timezone.utc)
-        payload = {
-            "sub": final_user_name,  # Subject - user identifier from IBM Verify
-            "woUserId": final_user_name,  # Watson Orchestrate user ID
-            "woTenantId": settings.WXO_TENANT_ID,  # Watson Orchestrate tenant ID
-            "iat": now,  # Issued at
-            "exp": now + timedelta(hours=24),  # Expiration time (24 hours)
-            "iss": "products-web-app",  # Issuer
-        }
+        iat = int(now.timestamp())
+        exp = int((now + timedelta(hours=24)).timestamp())
 
-        # Add context for user profile if available
-        payload["context"] = {
-            "user_profile": {
-                "name": final_user_name,
-                "custom_user_id": final_user_id,
-            }
+        payload = {
+            "sub": final_user_name,
+            "woUserId": final_user_name,
+            "woTenantId": settings.WXO_TENANT_ID,
+            "tenant_id": settings.WXO_TENANT_ID,
+            "iss": "products-web-app",
+            "iat": iat,
+            "exp": exp,
         }
 
         # Encrypt SSO token in user_payload if provided (OBO flow)
@@ -210,8 +206,7 @@ def create_wxo_jwt_token(
                 print(f"Failed to encrypt user_payload: {str(encrypt_error)}")
                 raise
 
-        # Sign the JWT with RS256 algorithm using the PEM string
-        # Include kid in header so WXO can find the registered public key
+        # Sign the JWT with RS256 algorithm using the PEM string and include key ID
         token = jwt.encode(
             payload,
             private_key_pem,

@@ -9,17 +9,16 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as Oauth2callbackRouteImport } from './routes/oauth2callback'
-import { Route as LoginRouteImport } from './routes/login'
 import { Route as LayoutRouteImport } from './routes/_layout'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as Oauth2callbackRouteImport } from './routes/oauth2callback'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
-import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
-import { Route as LayoutFeedbackRouteImport } from './routes/_layout/feedback'
 import { Route as LayoutAdminRouteImport } from './routes/_layout/admin'
+import { Route as LayoutFeedbackRouteImport } from './routes/_layout/feedback'
+import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
 
-const Oauth2callbackRoute = Oauth2callbackRouteImport.update({
-  id: '/oauth2callback',
-  path: '/oauth2callback',
+const LayoutRoute = LayoutRouteImport.update({
+  id: '/_layout',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -27,8 +26,9 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LayoutRoute = LayoutRouteImport.update({
-  id: '/_layout',
+const Oauth2callbackRoute = Oauth2callbackRouteImport.update({
+  id: '/oauth2callback',
+  path: '/oauth2callback',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LayoutIndexRoute = LayoutIndexRouteImport.update({
@@ -36,9 +36,9 @@ const LayoutIndexRoute = LayoutIndexRouteImport.update({
   path: '/',
   getParentRoute: () => LayoutRoute,
 } as any)
-const LayoutSettingsRoute = LayoutSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
+const LayoutAdminRoute = LayoutAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => LayoutRoute,
 } as any)
 const LayoutFeedbackRoute = LayoutFeedbackRouteImport.update({
@@ -46,19 +46,19 @@ const LayoutFeedbackRoute = LayoutFeedbackRouteImport.update({
   path: '/feedback',
   getParentRoute: () => LayoutRoute,
 } as any)
-const LayoutAdminRoute = LayoutAdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
+const LayoutSettingsRoute = LayoutSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => LayoutRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
+  '/': typeof LayoutIndexRoute
   '/login': typeof LoginRoute
   '/oauth2callback': typeof Oauth2callbackRoute
   '/admin': typeof LayoutAdminRoute
   '/feedback': typeof LayoutFeedbackRoute
   '/settings': typeof LayoutSettingsRoute
-  '/': typeof LayoutIndexRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
@@ -81,12 +81,7 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/login'
-    | '/oauth2callback'
-    | '/admin'
-    | '/feedback'
-    | '/settings'
-    | '/'
+    '/' | '/login' | '/oauth2callback' | '/admin' | '/feedback' | '/settings'
   fileRoutesByTo: FileRoutesByTo
   to: '/login' | '/oauth2callback' | '/admin' | '/feedback' | '/settings' | '/'
   id:
@@ -108,11 +103,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/oauth2callback': {
-      id: '/oauth2callback'
-      path: '/oauth2callback'
-      fullPath: '/oauth2callback'
-      preLoaderRoute: typeof Oauth2callbackRouteImport
+    '/_layout': {
+      id: '/_layout'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof LayoutRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -122,11 +117,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_layout': {
-      id: '/_layout'
-      path: ''
-      fullPath: ''
-      preLoaderRoute: typeof LayoutRouteImport
+    '/oauth2callback': {
+      id: '/oauth2callback'
+      path: '/oauth2callback'
+      fullPath: '/oauth2callback'
+      preLoaderRoute: typeof Oauth2callbackRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_layout/': {
@@ -136,11 +131,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutIndexRouteImport
       parentRoute: typeof LayoutRoute
     }
-    '/_layout/settings': {
-      id: '/_layout/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof LayoutSettingsRouteImport
+    '/_layout/admin': {
+      id: '/_layout/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof LayoutAdminRouteImport
       parentRoute: typeof LayoutRoute
     }
     '/_layout/feedback': {
@@ -150,11 +145,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutFeedbackRouteImport
       parentRoute: typeof LayoutRoute
     }
-    '/_layout/admin': {
-      id: '/_layout/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof LayoutAdminRouteImport
+    '/_layout/settings': {
+      id: '/_layout/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof LayoutSettingsRouteImport
       parentRoute: typeof LayoutRoute
     }
   }

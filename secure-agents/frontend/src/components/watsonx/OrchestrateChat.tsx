@@ -84,16 +84,19 @@ const OrchestrateChat: React.FC = () => {
       instance.on("feedback", handlers.feedbackHandler);
       instance.updateCustomHeaderItems([getCustomLanguageSelector()]);
 
-      // Handle auth token needed event
-      // Set the token on the event object, not by calling updateIdentityToken
-      instance.on("authTokenNeeded", async (e: any) => {
-        console.log("WxO requesting auth token");
+      // Handle auth token needed and identity token expired events
+      const handleAuthEvent = async (e: any) => {
+        console.log("WxO requesting auth/identity token", e);
         const token = await getIdentityToken();
         if (token) {
-          console.log(token);
           e.authToken = token;
+          e.identityToken = token;
         }
-      });
+      };
+
+      instance.on("authTokenNeeded", handleAuthEvent);
+      instance.on("identityTokenExpired", handleAuthEvent);
+      instance.on({ type: "identityTokenExpired", handler: handleAuthEvent });
     }
   };
 
@@ -127,6 +130,14 @@ const OrchestrateChat: React.FC = () => {
         console.log("✅ Loaded WxO configuration from backend");
 
         // Configure Watson Orchestrate with backend config
+        const chatOptions: any = {
+          agentId: wxoConfig.agentId || null,
+          onLoad: onChatLoad,
+        };
+        if (wxoConfig.agentEnvironmentId) {
+          chatOptions.agentEnvironmentId = wxoConfig.agentEnvironmentId;
+        }
+
         window.wxOConfiguration = {
           orchestrationID: wxoConfig.orchestrationID || null,
           hostURL: wxoConfig.hostURL || null,
@@ -135,12 +146,10 @@ const OrchestrateChat: React.FC = () => {
           deploymentPlatform: wxoConfig.deploymentPlatform || "ibmcloud",
           crn: wxoConfig.crn || null,
           token: token, // Set initial token
+          authToken: token,
+          identityToken: token,
           identityTokenFunction: getIdentityToken, // For token refresh
-          chatOptions: {
-            agentId: wxoConfig.agentId || null,
-            agentEnvironmentId: wxoConfig.agentEnvironmentId || null,
-            onLoad: onChatLoad,
-          },
+          chatOptions: chatOptions,
           defaultLocale: defaultLocale,
 
           // Options: float (default) | custom | fullscreen-overlay
@@ -177,7 +186,7 @@ const OrchestrateChat: React.FC = () => {
           // Initialize chat instance
           try {
             if (window.wxoLoader) {
-              await window.wxoLoader.init();
+              await window.wxoLoader.init(window.wxOConfiguration);
               console.log(
                 "Watson Orchestrate chat initialized with authentication",
               );

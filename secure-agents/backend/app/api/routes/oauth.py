@@ -275,14 +275,16 @@ def generate_wxo_jwt(request_data: WXOJWTRequest) -> dict[str, Any]:
 @router.get("/wxo/config")
 def get_wxo_config() -> dict[str, Any]:
     """Get Watson Orchestrate configuration"""
-    return {
+    config: dict[str, Any] = {
         "orchestrationID": settings.WXO_ORCHESTRATION_ID,
         "hostURL": settings.WXO_HOST_URL,
         "deploymentPlatform": settings.WXO_DEPLOYMENT_PLATFORM,
         "crn": settings.WXO_CRN,
         "agentId": settings.WXO_AGENT_ID,
-        "agentEnvironmentId": settings.WXO_AGENT_ENVIRONMENT_ID,
     }
+    if settings.WXO_AGENT_ENVIRONMENT_ID:
+        config["agentEnvironmentId"] = settings.WXO_AGENT_ENVIRONMENT_ID
+    return config
 
 
 @router.post("/oauth/introspect")
